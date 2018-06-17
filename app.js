@@ -7,7 +7,7 @@ var bodyParser = require('body-parser')
 //get rid of warning-map global promise
 mongoose.Promise=global.Promise;
 //connect to mongoose
-mongoose.connect('mongodb://localhost/vidjot-dev',{
+mongoose.connect('mongodb://localhost/ideajot-dev',{
     useMongoClient:true
 })
 .then(()=>console.log("MongoDB connected"))
@@ -62,7 +62,13 @@ app.post('/ideas',(req,res)=>{
         });
     }
     else { 
-        res.send('passed');
+        const newUser = {
+            title:req.body.title,
+            details:req.body.description
+        }
+        new Idea(newUser).save().then(idea=>{
+            res.redirect('/ideas');
+        })
     }
    
 });
