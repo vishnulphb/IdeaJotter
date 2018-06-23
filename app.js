@@ -1,8 +1,11 @@
 const express = require('express');
 const exphbs  = require('express-handlebars');
-const app = express();
 const mongoose = require('mongoose');
-var bodyParser = require('body-parser')
+const bodyParser = require('body-parser')
+const methodOverride = require('method-override')
+const app = express();
+
+
 
 //get rid of warning-map global promise
 mongoose.Promise=global.Promise;
@@ -28,6 +31,10 @@ app.use(bodyParser.urlencoded({ extended: false }))
 // parse application/json
 app.use(bodyParser.json())
 
+// override with POST having ?_method=DELETE
+app.use(methodOverride('_method'))
+
+
 //Index Route
 app.get('/',(req,res)=>{
     const title = "Vishnu Flash Cards";
@@ -44,7 +51,20 @@ app.get('/about',(req,res)=>{
 app.get('/ideas/add',(req,res)=>{
     res.render('ideas/add');
 });
-////set
+
+//get
+app.get('/ideas',(req,res)=>{
+    //console.log(Idea.find({}));
+    Idea.find({})
+    .sort({date:"descending"})
+    .then(x=>{
+        res.render('ideas/index',{
+            ideas:x
+        });
+    });
+});
+
+//post
 app.post('/ideas',(req,res)=>{
     let errors = [];
     if(!req.body.title){
@@ -57,20 +77,43 @@ app.post('/ideas',(req,res)=>{
         console.log(errors);
         res.render('ideas/add',{
             errors:errors,
-            title:req.body.title,
-            description:req.body.description
+            title:req.body.title, //to retain values after postback 
+            description:req.body.description 
         });
     }
     else { 
         const newUser = {
             title:req.body.title,
             details:req.body.description
-        }
+        };
         new Idea(newUser).save().then(idea=>{
             res.redirect('/ideas');
         })
     }
    
+});
+
+//edit idea get
+
+app.get('/ideas/edit/:id',(req,res)=>{
+    //console.log(req.params.id);
+    Idea.findById(req.params.id)
+    .then(x=>{
+        res.render('ideas/edit',{
+           idea:x 
+        })
+    });
+});
+
+app.put('/ideas/:id',(req,res)=>{
+    //res.send("put request success?")
+    console.log("req: ",req.body.title);
+    Idea.findByIdAndUpdate(req.params.id,
+        {
+            title:req.body.title,
+            details:req.body.description
+        })
+    .then(res.redirect('/ideas'));
 });
 
 const port = 5000;
